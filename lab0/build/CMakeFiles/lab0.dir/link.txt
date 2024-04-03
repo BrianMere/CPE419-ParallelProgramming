@@ -1,0 +1,1 @@
+/usr/bin/g++  -std=c++0x -Wall -pedantic -g CMakeFiles/lab0.dir/src/lab0.cpp.o -o lab0 
