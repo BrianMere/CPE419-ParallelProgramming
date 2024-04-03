@@ -8,6 +8,7 @@
 
 #define CORE 3
 #define MAX 3
+#define NUM_THREADS 3
 
 int AMat[MAX][MAX] = {{10, 20, 30},
    {40, 50, 60},
@@ -25,7 +26,7 @@ int add[MAX][MAX];
 void* addMatrices(void* arg) {
    int core = (int) arg;
    // Each thread computes 1/3rd of matrix addition
-   for (int i = core * MAX / 3; i < (core + 1) * MAX / 3; i++) {
+   for (int i = core * MAX / NUM_THREADS; i < (core + 1) * MAX / NUM_THREADS; i++) {
       for (int j = 0; j < MAX; j++) {
          add[i][j] = AMat[i][j] + BMat[i][j];
       }
