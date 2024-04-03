@@ -1,3 +1,0 @@
-/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/build/CMakeFiles/lab0.dir
-/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/build/CMakeFiles/edit_cache.dir
-/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/build/CMakeFiles/rebuild_cache.dir

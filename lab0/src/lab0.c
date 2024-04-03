@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/sysinfo.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -31,7 +32,16 @@ void* addMatrices(void* arg) {
    }
 }
 
+void printSystemInfo() 
+{
+   printf("This system has %d processors configured and "
+      "%d processors available.\n",
+      get_nprocs_conf(), get_nprocs());
+}
+
 main() {
+
+   printSystemInfo();
 
    for (int i = 0; i < CORE; i++) {
       pthread_create(&thread[i], NULL, &addMatrices, (void*)i);
@@ -39,8 +49,5 @@ main() {
    for (int i = 0; i < CORE; i++) {
       pthread_join(thread[i], NULL);
    }
-   printf("Sucess!!!");
+   printf("Success!!!");
 }
-
-
-

@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/build",
-  "command": "/usr/bin/g++  -I/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/./include  -std=c++0x -Wall -pedantic -g -o CMakeFiles/lab0.dir/src/lab0.cpp.o -c /home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/src/lab0.cpp",
-  "file": "/home/brianm/Documents/Repositories/PerpendicularGnimmagorp/lab0/src/lab0.cpp",
-  "output": "CMakeFiles/lab0.dir/src/lab0.cpp.o"
-}
-]
