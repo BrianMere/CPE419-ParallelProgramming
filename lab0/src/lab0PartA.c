@@ -15,7 +15,7 @@ float BMat[MAX][MAX];
 
 pthread_t thread[CORE];
 
-int add[MAX][MAX];
+float add[MAX][MAX];
 
 void* addMatrices(void* arg) {
    int core = (int) arg;
@@ -30,15 +30,14 @@ void* addMatrices(void* arg) {
 /**
  * Using the address of the given matrix, create a pseudo random matrix. 
 */
-void initMatrices(float mat[MAX][MAX])
+void initMatrices()
 {
-   srand(mat[0][0]);
    for(int i = 0; i < MAX; ++i)
    {
       for(int j = 0; j < MAX; ++j)
       {
-         mat[i][j] = (float) rand();
-         mat[i][j] = mat[i][j] / rand();
+         AMat[i][j] = i * 0.41f + j * 1.41f;
+         BMat[i][j] = i * 0.21f + j * 0.9f;
       }
    }
 }
@@ -86,6 +85,8 @@ int main() {
 
    printSystemInfo();
 
+   initMatrices();
+
    struct timespec begin, end;
    double elapsed;
 
@@ -105,7 +106,27 @@ int main() {
    elapsed = end.tv_sec - begin.tv_sec;
    elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
 
-   printf("Time : %lf", elapsed);
+   printf("Time for parallel: %lf\n", elapsed);
 
-   printf("Success!!!");
+
+   // Do the same for sequential
+   float res[MAX][MAX];
+
+   clock_gettime(CLOCK_MONOTONIC, &begin);
+
+   sequentialAddMat(AMat, BMat, res);
+
+   clock_gettime(CLOCK_MONOTONIC, &end);
+
+   elapsed = end.tv_sec - begin.tv_sec;
+   elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+
+   printf("Time for sequential: %lf\n", elapsed);
+
+   if(!test(res, add))
+   {
+      printf("However, the matrices aren't the same\n");
+   }
+
+   printf("End Program!!!\n");
 }
