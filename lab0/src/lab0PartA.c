@@ -6,9 +6,12 @@
 #include <pthread.h>
 
 
-#define CORE 3
-#define MAX 1000
-#define NUM_THREADS 3
+#define CORE 8
+#define MAX 10000
+#define MAX_NUM_THREADS 2 * CORE
+
+// global to store number of threads for different runs. 
+int num_threads = 3;
 
 float AMat[MAX][MAX];
 float BMat[MAX][MAX];
@@ -20,7 +23,7 @@ float add[MAX][MAX];
 void* addMatrices(void* arg) {
    int core = (int) arg;
    // Each thread computes 1/3rd of matrix addition
-   for (int i = core * MAX / NUM_THREADS; i < (core + 1) * MAX / NUM_THREADS; i++) {
+   for (int i = core * MAX / num_threads; i < (core + 1) * MAX / num_threads && i < MAX; i++) {
       for (int j = 0; j < MAX; j++) {
          add[i][j] = AMat[i][j] + BMat[i][j];
       }
@@ -85,47 +88,54 @@ int main() {
 
    printSystemInfo();
 
-   initMatrices();
-
-   struct timespec begin, end;
-   double elapsed;
-
-   clock_gettime(CLOCK_MONOTONIC, &begin);
-
-   // spawn threads to do work here
-
-   for (int i = 0; i < CORE; i++) {
-      pthread_create(&thread[i], NULL, &addMatrices, (void*)i);
-   }
-   for (int i = 0; i < CORE; i++) {
-      pthread_join(thread[i], NULL);
-   }
-
-   clock_gettime(CLOCK_MONOTONIC, &end);
-
-   elapsed = end.tv_sec - begin.tv_sec;
-   elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-
-   printf("Time for parallel: %lf\n", elapsed);
-
-
-   // Do the same for sequential
-   float res[MAX][MAX];
-
-   clock_gettime(CLOCK_MONOTONIC, &begin);
-
-   sequentialAddMat(AMat, BMat, res);
-
-   clock_gettime(CLOCK_MONOTONIC, &end);
-
-   elapsed = end.tv_sec - begin.tv_sec;
-   elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-
-   printf("Time for sequential: %lf\n", elapsed);
-
-   if(!test(res, add))
+   for(int thread_count = 1; thread_count < MAX_NUM_THREADS; ++thread_count)
    {
-      printf("However, the matrices aren't the same\n");
+      num_threads = thread_count;
+      printf("Testing %d number of threads: \n", num_threads);
+
+
+      initMatrices();
+
+      struct timespec begin, end;
+      double elapsed;
+
+      clock_gettime(CLOCK_MONOTONIC, &begin);
+
+      // spawn threads to do work here
+
+      for (int i = 0; i < CORE; i++) {
+         pthread_create(&thread[i], NULL, &addMatrices, (void*)i);
+      }
+      for (int i = 0; i < CORE; i++) {
+         pthread_join(thread[i], NULL);
+      }
+
+      clock_gettime(CLOCK_MONOTONIC, &end);
+
+      elapsed = end.tv_sec - begin.tv_sec;
+      elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+
+      printf("Time for parallel: %lf\n", elapsed);
+
+
+      // Do the same for sequential
+      float res[MAX][MAX];
+
+      clock_gettime(CLOCK_MONOTONIC, &begin);
+
+      sequentialAddMat(AMat, BMat, res);
+
+      clock_gettime(CLOCK_MONOTONIC, &end);
+
+      elapsed = end.tv_sec - begin.tv_sec;
+      elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+
+      printf("Time for sequential: %lf\n", elapsed);
+
+      if(!test(res, add))
+      {
+         printf("However, the matrices aren't the same\n");
+      }
    }
 
    printf("End Program!!!\n");
