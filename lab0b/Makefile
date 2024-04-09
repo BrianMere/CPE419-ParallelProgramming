@@ -1,2 +1,2 @@
 include ../Makefile
-CFLAGS += -Ofast
+CFLAGS += -Ofast -ffast-math
