@@ -7,7 +7,7 @@
 
 
 #define CORE 8
-#define MAX 10000
+#define MAX 1000
 #define MAX_NUM_THREADS 2 * CORE
 
 // global to store number of threads for different runs. 
@@ -86,18 +86,30 @@ void printSystemInfo()
 
 int main() {
 
+   struct timespec begin, end;
+   double elapsed;
+
    printSystemInfo();
+
+   initMatrices();
+
+   // Do the same for sequential
+   float res[MAX][MAX];
+
+   clock_gettime(CLOCK_MONOTONIC, &begin);
+
+   sequentialAddMat(AMat, BMat, res);
+
+   clock_gettime(CLOCK_MONOTONIC, &end);
+
+   elapsed = end.tv_sec - begin.tv_sec;
+   elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+
+   printf("Time for sequential: %lf\n", elapsed);
 
    for(int thread_count = 1; thread_count < MAX_NUM_THREADS; ++thread_count)
    {
       num_threads = thread_count;
-      printf("Testing %d number of threads: \n", num_threads);
-
-
-      initMatrices();
-
-      struct timespec begin, end;
-      double elapsed;
 
       clock_gettime(CLOCK_MONOTONIC, &begin);
 
@@ -115,22 +127,8 @@ int main() {
       elapsed = end.tv_sec - begin.tv_sec;
       elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
 
-      printf("Time for parallel: %lf\n", elapsed);
+      printf("%lf\n", elapsed);
 
-
-      // Do the same for sequential
-      float res[MAX][MAX];
-
-      clock_gettime(CLOCK_MONOTONIC, &begin);
-
-      sequentialAddMat(AMat, BMat, res);
-
-      clock_gettime(CLOCK_MONOTONIC, &end);
-
-      elapsed = end.tv_sec - begin.tv_sec;
-      elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-
-      printf("Time for sequential: %lf\n", elapsed);
 
       if(!test(res, add))
       {
