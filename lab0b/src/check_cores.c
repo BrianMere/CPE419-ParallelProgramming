@@ -10,7 +10,7 @@
 #include <errno.h>
 
 
-int main() {
+int check_cores() {
   long nprocs = -1;
   long nprocs_max = -1;
 #ifdef _WIN32

@@ -6,9 +6,9 @@
 #include <pthread.h>
 
 //#define CORE 4
-#define AColBRow 3000 //num columns of A and num rows of B
-#define ARow 3000 //num Rows of A
-#define BCol 3000
+#define AColBRow 300 //num columns of A and num rows of B
+#define ARow 300 //num Rows of A
+#define BCol 300
 
 float AMat[ARow*AColBRow];
 float BMat[AColBRow*BCol];
