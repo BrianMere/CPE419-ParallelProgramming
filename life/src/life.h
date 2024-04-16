@@ -4,17 +4,16 @@
 #include <stdint.h>
 
 #define N 30
+#define NUM_ITER 1000
+#define NUM_THREADS 4
 #define FRAME_DELAY 200000
 #define PULSAR_OFFSET 6
-// #define FRAME_DELAY 0
-
 
 #define ALIVE   1
 #define DEAD    0
 
 /** Allocate memory for our "frame buffers" */
 void init_arrays();
-
 
 
 /**

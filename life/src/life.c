@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <time.h>
 #include "life.h"
 #include "graphics.h"
 
@@ -27,6 +28,10 @@ uint8_t * arr1;
 uint8_t * arr2;
 uint8_t switch_flag = 0;
 
+struct timespec begin, end;
+double total_time = 0;
+uint64_t total_count = 0;
+
 void init_arrays();
 void seed_arrays();
 void life_main();
@@ -35,11 +40,11 @@ uint8_t get_alive(uint8_t * array, uint32_t row, uint32_t col);
 int main()
 {
    
-   int n = N;
    init_arrays();
    seed_arrays();
 
-   while (1)
+   omp_set_num_threads(NUM_THREADS);
+   for (int i = 0; i < NUM_ITER; i++)
    {
       life_main();
       // if (getline())
@@ -48,6 +53,8 @@ int main()
       // }
       usleep(FRAME_DELAY);
    }
+
+   printf("Average Time in us: %f", ((float)total_time) * 1000000 / (total_count) );
 
    free(arr1);
    free(arr2);
@@ -59,35 +66,45 @@ void life_main()
    uint8_t * past_array    = (switch_flag) ? arr1 : arr2;
    uint8_t * future_array  = (switch_flag) ? arr2 : arr1;
    switch_flag = !switch_flag;
-   #pragma omp parallel for shared(past_array, future_array) default(none)
-   for (int i = 0; i < N * N; i++)
-   {
-      uint32_t row = i / N;
-      uint32_t col = i % N;
-      uint8_t cell_status = get_cell(past_array, row, col);
-      uint8_t neighbors = get_alive(past_array, row, col);
 
-      // If a cell has less than 2 or more than 3 neighbors, kill it
-      if (neighbors < 2 || neighbors > 3)
+   clock_gettime(CLOCK_MONOTONIC, &begin);
+
+   #pragma omp parallel for collapse(2) shared(past_array, future_array) default(none)
+   for (uint32_t row = 0; row < N ; row++)
+   {
+      for (uint32_t col = 0; col < N; col++)
       {
-         set_cell(future_array, row, col, DEAD);
-      }
-      // If an alive cell has 2 or 3 neighbors, it is alive
-      else if (cell_status == ALIVE && (neighbors == 2 || neighbors == 3))
-      {
-         set_cell(future_array, row, col, ALIVE);
-      }
-      // If a dead cell has 3 neighbors, revive it
-      else if (cell_status == DEAD && neighbors == 3)
-      {
-         set_cell(future_array, row, col, ALIVE);
-      }
-      // Otherwise, maintain its status
-      else
-      {
-         set_cell(future_array, row, col, cell_status);
+         uint8_t cell_status = get_cell(past_array, row, col);
+         uint8_t neighbors = get_alive(past_array, row, col);
+
+         // If a cell has less than 2 or more than 3 neighbors, kill it
+         if (neighbors < 2 || neighbors > 3)
+         {
+            set_cell(future_array, row, col, DEAD);
+         }
+         // If an alive cell has 2 or 3 neighbors, it is alive
+         else if (cell_status == ALIVE && (neighbors == 2 || neighbors == 3))
+         {
+            set_cell(future_array, row, col, ALIVE);
+         }
+         // If a dead cell has 3 neighbors, revive it
+         else if (cell_status == DEAD && neighbors == 3)
+         {
+            set_cell(future_array, row, col, ALIVE);
+         }
+         // Otherwise, maintain its status
+         else
+         {
+            set_cell(future_array, row, col, cell_status);
+         }
       }
    }
+
+   clock_gettime(CLOCK_MONOTONIC, &end);
+   double elapsed = end.tv_sec - begin.tv_sec;
+   elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+   total_time += elapsed;
+   total_count ++;
 
    print_screen(past_array, N);
 }
@@ -112,12 +129,7 @@ void init_arrays () {
 
 void seed_arrays()
 {
-
-   for (int row = 0; row < N; row++)
-      for (int col = 0; col < N; col++)
-         {
-               set_cell(arr1, row, col, 0);
-         }
+   // Fill with Black
    for (int row = 0; row < N; row++)
       for (int col = 0; col < N; col++)
          {
@@ -141,7 +153,6 @@ void seed_arrays()
                set_cell(arr2, row+PULSAR_OFFSET, col+PULSAR_OFFSET, 1);
             }
       }
-
 
    // Random
    // for (int row = 0; row < N; row++)

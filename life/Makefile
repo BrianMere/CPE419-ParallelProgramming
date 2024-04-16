@@ -1,2 +1,2 @@
 include ../Makefile
-CFLAGS += -Ofast -ffast-math -fopenmp 
+CFLAGS += -Ofast -ffast-math -fopenmp -lrt
