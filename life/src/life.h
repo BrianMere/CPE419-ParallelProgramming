@@ -3,7 +3,12 @@
 
 #include <stdint.h>
 
-#define N 10
+#define N 30
+#define FRAME_DELAY 200000
+#define PULSAR_OFFSET 6
+// #define FRAME_DELAY 0
+
+
 #define ALIVE   1
 #define DEAD    0
 

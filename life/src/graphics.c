@@ -35,9 +35,9 @@ void print_screen(uint8_t * arr, uint32_t n)
         for(uint32_t j = 0; j < n; j++)
         {
             if(get_cell(arr, i, j)) // when alive
-                printf("■");
+                printf("⬜");
             else // when dead
-                printf("□");
+                printf("⬛");
         }
         printf("\n");
     }
