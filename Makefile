@@ -1,8 +1,8 @@
 LAB		= $(notdir $(CURDIR)).bin
-CC 		= gcc
+CC 		?= gcc
 CFLAGS 	= -lpthread -fpic -std=gnu99
 
-OBJECTS = $(addprefix build/, $(addsuffix .o, $(basename $(notdir $(wildcard src/*.c)))))
+OBJECTS = $(addprefix build/, $(addsuffix .o, $(basename $(notdir $(wildcard src/*.c*)))))
 HEADERS = $(wildcard src/*.h)
 
 all: build $(LAB)
