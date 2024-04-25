@@ -9,8 +9,11 @@
 #include <time.h>
 #include <cstdlib>
 
+#include <stdio.h>
+#include <dirent.h>
 
-int n = 2; // Number of training images
+int n = 20; // Number of training images
+int k = 1;
 // int n = (256*256); // Number of data points
 #define TASK_SIZE 128
 
@@ -22,6 +25,8 @@ void merge(T *X, int n, T *tmp) ;
 template<typename T>
 class ImageVec
 {
+
+
 
 
 public:
@@ -65,6 +70,35 @@ public:
     }
 };
 
+// populate image data in ImageVec.
+void getImage(const std::string filepath, ImageVec<uint8_t> * i_vec)
+{
+    int width, height, bpp;
+
+    std::cout << "Opening File: " << filepath << std::endl;
+
+    stbi_uc * image = stbi_load(filepath.c_str(), &width, &height, &bpp, STBI_grey);
+
+    if (image == nullptr) {
+        fprintf(stderr, "Failed to load image %s\n", filepath.c_str());
+        return;
+    }
+    printf("Image Width %d, Height %d, BPP %d\n", width, height, bpp);
+
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            // Calculate linear index into image data
+            int index = y * width + x;
+            uint8_t grayscale = image[index];
+            i_vec->img[index] = grayscale;
+        }
+    }
+
+    stbi_image_free(image); // Free the memory allocated by stbi_load()
+}
+
 // This function finds classification of point p using
 // k nearest neighbour algorithm. It assumes only two
 // groups and returns 0 if p belongs to group 0, else
@@ -106,73 +140,92 @@ int main()
 	ImageVec<uint8_t> arr[n];
 
     /* Define Test Data */
-    for (int i = 0; i < 256; i++)
-    {
-        for (int j = 0; j < 256; j++)
+    int i = 0;
+    struct dirent *entry = nullptr;
+    DIR *dp = nullptr;
+
+    dp = opendir("img0");
+    if (dp != nullptr) {
+        while ((entry = readdir(dp)))
+            if (entry->d_name[0] != '.')
+            {
+                printf ("Training on image %s\n", entry->d_name);
+                arr[i].val = 0;
+                getImage(
+                    (std::string("img0/") + 
+                    std::string(entry->d_name)), 
+                &arr[i++]);
+            }       
+    }
+    closedir(dp);
+    printf("Done with img0\n");
+
+    dp = opendir("img1");
+    if (dp != nullptr) {
+        while ((entry = readdir(dp)))
         {
-            arr[0].img[i + 256 * j] = ( i + j) / 2;
+        if (entry->d_name[0] != '.')
+            {
+            printf ("Training on image %s\n", entry->d_name);
+            arr[i].val = 1;
+            getImage( (std::string("img1/") + 
+                    std::string(entry->d_name)), &arr[i++]);
+            }
         }
     }
-    arr[0].val = 0;
+    closedir(dp);
 
-    for (int i = 0; i < 256; i++)
-    {
-        for (int j = 0; j < 256; j++)
+    ImageVec<uint8_t> test;
+    dp = opendir("test");
+    if (dp != nullptr) {
+        while ((entry = readdir(dp)))
         {
-            arr[1].img[i + 256 * j] = std::sqrt((128 - i) * (128 - i) + (128 - j)*(128 - j));
+            if (entry->d_name[0] != '.')
+            {
+                printf ("Testing on image %s\n", entry->d_name);
+                getImage(
+                    (std::string("test/") + 
+                    std::string(entry->d_name)), 
+                &test);
+
+
+                // Parameter to decide group of the testing point
+                
+
+                struct timespec begin;
+                struct timespec end;
+                double total_time = 0;
+                uint64_t total_count = 0;
+                for (int j = 1; j < 10; j = j * 2)
+                {
+                    omp_set_num_threads(j);
+                    printf("Running with %d threads\n", j);
+
+                    int result;
+
+                    for (int l = 0; l < 10; l++)
+                    {
+                        clock_gettime(CLOCK_MONOTONIC, &begin);
+                        result = classifyAPoint(arr, n, k, &test);
+                        clock_gettime(CLOCK_MONOTONIC, &end);
+
+                        double elapsed = end.tv_sec - begin.tv_sec;
+                        elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+                        total_time += elapsed;
+                        total_count ++;
+                    }
+
+                    printf ("Elapsed Time:%lf\n", total_time / total_count);
+                    // std::cout << "Image we are classifying is" <<  entry->d_name << std::endl;
+                    if (result == 0) // is dog
+                        printf("\t%s was measured as a dog.\n", entry->d_name);
+                    else // is cat
+                        printf ("\t%s was measured as a cat\n", entry->d_name);
+                }
+            }
         }
     }
-
-    arr[1].val = 1;
-
-	/*Testing Point*/
-	ImageVec<uint8_t> test;
-	// for (int i = 0; i < 256; i++)
-    // {
-    //     for (int j = 0; j < 256; j++)
-    //     {
-    //         test.img[i + 256 * j] = ( i + j) / 3;
-    //     }
-    // }
-     for (int i = 0; i < 256; i++)
-    {
-        for (int j = 0; j < 256; j++)
-        {
-            test.img[i + 256 * j] = std::sqrt((100 - i) * (100 - i) + (100 - j)*(100 - j));
-        }
-    }
-
-	// Parameter to decide group of the testing point
-	int k = n/2;
-
-    struct timespec begin;
-    struct timespec end;
-    double total_time = 0;
-    uint64_t total_count = 0;
-    for (int j = 1; j < 10; j = j * 2)
-    {
-        omp_set_num_threads(j);
-        printf("Running with %d threads\n", j);
-
-        int result;
-
-        for (int l = 0; l < 10; l++)
-        {
-            clock_gettime(CLOCK_MONOTONIC, &begin);
-            result = classifyAPoint(arr, n, k, &test);
-            clock_gettime(CLOCK_MONOTONIC, &end);
-
-            double elapsed = end.tv_sec - begin.tv_sec;
-            elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-            total_time += elapsed;
-            total_count ++;
-        }
-
-        printf ("Elapsed Time:%lf\n", total_time / total_count);
-        printf ("The value classified to unknown point"
-                " is %d.\n", result);
-    }
-   
+    closedir(dp);
 	return 0;
 }
 

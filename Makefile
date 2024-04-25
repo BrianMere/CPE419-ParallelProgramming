@@ -1,6 +1,6 @@
 LAB		= $(notdir $(CURDIR)).bin
 CC 		?= gcc
-CFLAGS 	= -lpthread -fpic -std=gnu99
+CFLAGS 	= -lpthread -fpic 
 
 OBJECTS = $(addprefix build/, $(addsuffix .o, $(basename $(notdir $(wildcard src/*.c*)))))
 HEADERS = $(wildcard src/*.h)
