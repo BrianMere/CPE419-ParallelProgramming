@@ -1,6 +1,6 @@
 include ../Makefile
-CC = gcc
-CFLAGS = -fopenmp -g -O3 -std=c99 -lc -Wall -DTRACE -D_DEFAULT_SOURCE
+CC = nvcc 
+CFLAGS = -Xcompiler -fopenmp -Xcompiler -g -D_DEFAULT_SOURCE -lc
 
-build/%.o: src/%.c $(HEADERS)
+build/%.o: src/%.cu $(HEADERS)
 	$(CC) -c $< $(CFLAGS) -o $@
