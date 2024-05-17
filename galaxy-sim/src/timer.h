@@ -51,4 +51,17 @@ double GetTimer()
 #endif
 }
 
+cudaEvent_t start, stop;
+float elapsed=0;
+#define TIME(f, msg)                            \
+cudaEventCreate(&start);                        \
+cudaEventCreate(&stop);                         \
+cudaEventRecord(start, 0);                      \
+f;                                              \
+cudaEventRecord(stop, 0);                       \
+cudaEventSynchronize (stop);                    \
+cudaEventElapsedTime(&elapsed, start, stop);    \
+printf(msg": %f ms\n", elapsed);    
+
+
 #endif // TIMER_H

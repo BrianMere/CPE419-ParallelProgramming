@@ -14,7 +14,7 @@ void randomizeBodies(float *data, int n) {
   }
 }
 
-__global__ int bodyForce(Body *p, float dt, int n) {
+__global__ void bodyForce(Body *p, float dt, int n) {
   int tidx = threadIdx.x + blockIdx.x * blockDim.x;
 
   // #pragma omp parallel for schedule(dynamic)
@@ -41,7 +41,7 @@ __global__ int bodyForce(Body *p, float dt, int n) {
   //}
 }
 
-__global__ int updatePosition(Body* p, float dt, int n)
+__global__ void updatePosition(Body* p, float dt, int n)
 {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   if (i < n) // integrate position
@@ -72,20 +72,19 @@ int main(const int argc, const char** argv) {
   double totalTime = 0.0;
 
   for (int iter = 1; iter <= nIters; iter++) {
-    StartTimer();
 
-    bodyForce<<<CEIL_DIV(nBodies, 256), 256 >>>(p, dt, nBodies); // compute interbody forces
+    double tElapsed = 0;
+    TIME((bodyForce<<<CEIL_DIV(nBodies, 256), 256 >>>(p, dt, nBodies)), "Body Force");
+    tElapsed += elapsed;
+    TIME((updatePosition<<< CEIL_DIV(nBodies, 256), 256>>>(p, dt, nBodies)), "Update Position");
+    tElapsed += elapsed;
 
-    updatePosition<<< CEIL_DIV(nBodies, 256), 256>>>(p, dt, nBodies); // update positions
-
-    const double tElapsed = GetTimer() / 1000.0;
     if (iter > 1) { // First iter is warm up
       totalTime += tElapsed; 
     }
 
     #ifndef SHMOO
-        printf("Iteration %d: %.3f seconds\n", iter, tElapsed);
-        
+        printf("Iteration %d: %.3f ms\n", iter, tElapsed);
     #endif
   }
   double avgTime = totalTime / (double)(nIters-1); 
