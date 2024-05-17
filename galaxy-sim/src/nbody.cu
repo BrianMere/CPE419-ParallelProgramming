@@ -73,7 +73,31 @@ int main(const int argc, const char** argv) {
 
   double totalTime = 0.0;
 
+  cudaEventCreate(&start);                        
+  cudaEventCreate(&stop);                         
+  cudaEventRecord(start, 0);
+
+  for (int iter = 0; iter <= NITERS; iter++) {
+
+    // Time Calcs
+    double tElapsed = 0;
+
+    (cudaMemcpy(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice));
+    (bodyForce<<<CEIL_DIV(nBodies, 256), 256>>>(p, dt, nBodies));
+    (updatePosition<<< CEIL_DIV(nBodies, 256), 256>>>(p, dt, nBodies));
+    (cudaMemcpy(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost));
+    
+  }
+
+  cudaEventRecord(stop, 0);                       
+  cudaEventSynchronize (stop);                    
+  cudaEventElapsedTime(&elapsed, start, stop);    
+  printf("Time Without Streams: %f ms\n", elapsed); 
+
   // make streams
+  cudaEventCreate(&start);                        
+  cudaEventCreate(&stop);                         
+  cudaEventRecord(start, 0);
   cudaStream_t stream[NITERS];
   for( int iter = 0; iter < NITERS; iter++) 
     cudaStreamCreate(&stream[iter]);
@@ -83,22 +107,10 @@ int main(const int argc, const char** argv) {
     // Time Calcs
     double tElapsed = 0;
 
-    TIME((cudaMemcpy(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice)), "MemToDevice");
-    tElapsed += elapsed;
-    TIME((bodyForce<<<CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies)), "Body Force");
-    tElapsed += elapsed;
-    TIME((updatePosition<<< CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies)), "Update Position");
-    tElapsed += elapsed;
-    TIME((cudaMemcpy(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost)), "MemToHost");
-    tElapsed += elapsed;
-
-    if (iter > 0) { // First iter is warm up
-      totalTime += tElapsed; 
-    }
-
-    #ifndef SHMOO
-        printf("Iteration %d: %.3f ms\n", iter, tElapsed);
-    #endif
+    (cudaMemcpy(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice));
+    (bodyForce<<<CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies));
+    (updatePosition<<< CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies));
+    (cudaMemcpy(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost));
 
     
   }
@@ -106,15 +118,13 @@ int main(const int argc, const char** argv) {
   for( int iter = 0; iter < NITERS; iter++) 
     cudaStreamDestroy(stream[iter]);
 
-  double avgTime = totalTime / (double)(NITERS-1); 
+  cudaEventRecord(stop, 0);                       
+  cudaEventSynchronize (stop);                    
+  cudaEventElapsedTime(&elapsed, start, stop);    
+  printf("Time With Streams: %f ms\n", elapsed);   
 
-  #ifdef SHMOO
-    printf("%d, %0.3f\n", nBodies, 1e-9 * nBodies * nBodies / avgTime);
-  #else
-    printf("Average rate for iterations 2 through %d: %.3f steps per second.\n",
-          NITERS,(float) totalTime / 10.0f);
-    printf("%d Bodies: average %0.3f Billion Interactions / second\n", nBodies, 1e-9 * nBodies * nBodies / avgTime);
-  #endif 
+  
 
   cudaFree(p);
+  free(hp);
 }
