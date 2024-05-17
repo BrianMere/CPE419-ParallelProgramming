@@ -5,6 +5,7 @@
 
 #define SOFTENING 1e-9f
 #define CEIL_DIV(A, B) ((A+B-1) / B) 
+#define NITERS 10
 
 typedef struct { float x, y, z, vx, vy, vz; } Body;
 
@@ -61,39 +62,57 @@ int main(const int argc, const char** argv) {
   if (argc > 1) nBodies = atoi(argv[1]);
 
   const float dt = 0.01f; // time step
-  const int nIters = 10;  // simulation iterations
 
-  Body *p;
+  Body *p, *hp;
 
-  cudaMallocManaged(&p, sizeof(Body) * nBodies, cudaMemAttachGlobal);
+  hp = (Body * ) malloc(sizeof(Body) * nBodies);
 
-  randomizeBodies((float*)p, 6*nBodies); // Init pos / vel data
+  cudaMalloc(&p, sizeof(Body) * nBodies);
+
+  randomizeBodies((float*)hp, 6*nBodies); // Init pos / vel data
 
   double totalTime = 0.0;
 
-  for (int iter = 1; iter <= nIters; iter++) {
+  // make streams
+  cudaStream_t stream[NITERS];
+  for( int iter = 0; iter < NITERS; iter++) 
+    cudaStreamCreate(&stream[iter]);
 
+  for (int iter = 0; iter <= NITERS; iter++) {
+
+    // Time Calcs
     double tElapsed = 0;
-    TIME((bodyForce<<<CEIL_DIV(nBodies, 256), 256 >>>(p, dt, nBodies)), "Body Force");
+
+    TIME((cudaMemcpy(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice)), "MemToDevice");
     tElapsed += elapsed;
-    TIME((updatePosition<<< CEIL_DIV(nBodies, 256), 256>>>(p, dt, nBodies)), "Update Position");
+    TIME((bodyForce<<<CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies)), "Body Force");
+    tElapsed += elapsed;
+    TIME((updatePosition<<< CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies)), "Update Position");
+    tElapsed += elapsed;
+    TIME((cudaMemcpy(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost)), "MemToHost");
     tElapsed += elapsed;
 
-    if (iter > 1) { // First iter is warm up
+    if (iter > 0) { // First iter is warm up
       totalTime += tElapsed; 
     }
 
     #ifndef SHMOO
         printf("Iteration %d: %.3f ms\n", iter, tElapsed);
     #endif
+
+    
   }
-  double avgTime = totalTime / (double)(nIters-1); 
+
+  for( int iter = 0; iter < NITERS; iter++) 
+    cudaStreamDestroy(stream[iter]);
+
+  double avgTime = totalTime / (double)(NITERS-1); 
 
   #ifdef SHMOO
     printf("%d, %0.3f\n", nBodies, 1e-9 * nBodies * nBodies / avgTime);
   #else
     printf("Average rate for iterations 2 through %d: %.3f steps per second.\n",
-          nIters,(float) totalTime / 10.0f);
+          NITERS,(float) totalTime / 10.0f);
     printf("%d Bodies: average %0.3f Billion Interactions / second\n", nBodies, 1e-9 * nBodies * nBodies / avgTime);
   #endif 
 
