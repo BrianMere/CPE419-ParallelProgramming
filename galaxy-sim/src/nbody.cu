@@ -105,13 +105,10 @@ int main(const int argc, const char** argv) {
   for (int iter = 0; iter <= NITERS; iter++) {
 
     // Time Calcs
-    double tElapsed = 0;
-
-    (cudaMemcpy(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice));
+    (cudaMemcpyAsync(p, hp, sizeof(Body) * nBodies, cudaMemcpyHostToDevice));
     (bodyForce<<<CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies));
     (updatePosition<<< CEIL_DIV(nBodies, 256), 256, 0, stream[iter] >>>(p, dt, nBodies));
-    (cudaMemcpy(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost));
-
+    (cudaMemcpyAsync(hp, p, sizeof(Body) * nBodies, cudaMemcpyDeviceToHost));
     
   }
 
