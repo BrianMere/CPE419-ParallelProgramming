@@ -1,6 +1,8 @@
 /**
  * This file has some generalizations of common cuda practices that I just want to put in a header file
 */
+#ifndef CUDA_HELPING_H
+#define CUDA_HELPING_H
 
 #include "device_launch_parameters.h"
 #include <iostream>
@@ -47,3 +49,5 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+
+#endif 
