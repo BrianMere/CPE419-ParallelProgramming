@@ -21,7 +21,7 @@ void randomizeArr(T* arr, int n)
 */
 int main(int argc, char **argv)
 {
-    typedef float T; // define our type we want to use here.
+    typedef int T; // define our type we want to use here.
     T* arr, *gpu_arr, *res, *gpu_res;
     int n = DEF_ARR_SIZE;
 
@@ -30,11 +30,11 @@ int main(int argc, char **argv)
     res = (T*) malloc(sizeof(T));
     cudaMalloc(&gpu_arr, sizeof(T) * n);
     cudaMalloc(&gpu_res, sizeof(T));
+
     randomizeArr(arr, n);
 
-
     // Actually run the main timable block
-    std::string msg = "Reduction pass time";
+    std::string msg = "Reduction (close) pass time";
 
     cudaEvent_t start, stop;                              
     float elapsed=0;                                       
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
 
     // Do the reduction 
-    reduceOperation<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+    reduceAdjacent<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
 
     // Get data from the GPU (only want to get the res data)
     CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
@@ -58,6 +58,35 @@ int main(int argc, char **argv)
 
     // Output results and free data.
     std::cout << "Result of reduction: " << std::to_string(*res) << std::endl;
+
+    randomizeArr(arr, n);
+
+    // Actually run the main timable block
+    msg = "Reduction (far) pass time";
+
+    elapsed=0;                                       
+    cudaEventCreate(&start);                              
+    cudaEventCreate(&stop);                              
+    cudaEventRecord(start, 0);                         
+
+    // Pass data to the GPU 
+    CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
+
+    // Do the reduction 
+    reduceSpread<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+
+    // Get data from the GPU (only want to get the res data)
+    CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
+
+    cudaEventRecord(stop, 0);                      
+    cudaEventSynchronize(stop);                    
+    cudaEventElapsedTime(&elapsed, start, stop);   
+    std::cout << msg << ": " << std::to_string(elapsed) << " ms" << std::endl; 
+
+    // Output results and free data.
+    std::cout << "Result of reduction: " << std::to_string(*res) << std::endl;
+
+
     cudaFree(gpu_arr);
     cudaFree(gpu_res);
     free(arr);
