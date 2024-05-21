@@ -60,7 +60,7 @@ __global__ void reduceAdjacent(T* d_in, T* d_res, unsigned int n)
 
     // At the end, d_in[0] has the data we want.
     if(idx == 0)
-        d_res[0] = d_in[0];
+        *d_res = d_in[0];
 }
 
 /**
@@ -79,11 +79,16 @@ __global__ void reduceSpread(T* d_in, T* d_res, unsigned int n)
     int idx = getFlattenedIdx();
     int max_thdsperblk = blockDim.x * blockDim.y * blockDim.z;
 
-    // Then combine cache answers
-    for(unsigned int s = n >> 1; s > max_thdsperblk; s >>= 1)
+    // First reduce down to a size of a power of 2
+    int n_clog = 1;
+    while(n_clog < n)
+        n_clog <<= 1;
+
+    // Then combine cache answers (s here is half the considered array size)
+    for(unsigned int s = n_clog >> 1; s >= max_thdsperblk; s >>= 1)
     {
         // again only do the following if you're in the size AND are the 'left' group of threads
-        if (idx + s < n && (int)(idx / 2) < s)
+        if (idx + s < n && idx < s)
         {
             d_in[idx] = op(d_in[idx], d_in[idx + s]);
         }
@@ -103,7 +108,7 @@ __global__ void reduceSpread(T* d_in, T* d_res, unsigned int n)
         for(unsigned int s = max_thdsperblk >> 1; s > 0; s >>= 1)
         {
             // only do the following if you're in the cache AND you're the 'left' thread
-            if (c_idx + s < max_thdsperblk && (int)(c_idx / 2) < s)
+            if (c_idx + s < max_thdsperblk && c_idx < s)
             {
                 cache[c_idx] = op(cache[c_idx], cache[c_idx + s]);
             }
@@ -118,6 +123,18 @@ __global__ void reduceSpread(T* d_in, T* d_res, unsigned int n)
 
     
 
+}
+
+template<typename T>
+void reduce_omp(T* d_in, T* d_res, unsigned int n)
+{
+    T sum = 0;
+    #pragma omp parallel for reduction(+:sum)
+    for (uint64_t i = 0; i < n; i++)
+    {
+        sum += d_in[i];
+    }
+    *d_res = sum; 
 }
 
 #endif
