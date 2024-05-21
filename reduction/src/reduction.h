@@ -21,17 +21,19 @@ template<typename T>
 __global__ void reduceOperation(T* d_in, T* d_res, unsigned int n)
 {
     int idx = getFlattenedIdx();
-    __shared__ T cache[MAXNUM_THDSPERBLK];
-    int c_idx = idx % MAXNUM_THDSPERBLK;
+    __shared__ T cache[MAXNUM_THDSPERBLK]; // we may have extra memory but that's okay
+    int max_thdsperblk = blockDim.x * blockDim.y * blockDim.z;
+    int c_idx = idx % max_thdsperblk;
 
     // Copy data entry to d_out
     cache[c_idx] = d_in[idx];
     __syncthreads();
 
     // Do the reduction within d_out. Here `s` is the offset between entries to add
-    for(unsigned int s = 1; s < MAXNUM_THDSPERBLK; s <<= 1)
+    for(unsigned int s = 1; s < max_thdsperblk; s <<= 1)
     {
-        if (c_idx + s < MAXNUM_THDSPERBLK)
+        // only do the following if you're in the cache AND you're the 'left' thread
+        if (c_idx + s < max_thdsperblk && c_idx % (s << 1) == 0)
         {
             cache[c_idx] = op(cache[c_idx], cache[c_idx + s]);
         }
@@ -39,13 +41,15 @@ __global__ void reduceOperation(T* d_in, T* d_res, unsigned int n)
     }
 
     // Upload cache data to the d_in
-    d_in[idx] = cache[0];
+    if(c_idx == 0)
+        d_in[idx] = cache[0];
     __syncthreads();
 
     // Then combine cache answers
-    for(unsigned int s = MAXNUM_THDSPERBLK; s < n; s <<= 1)
+    for(unsigned int s = max_thdsperblk; s < n; s <<= 1)
     {
-        if (idx + s < n)
+        // again only do the following if you're in the size AND are the 'left' thread
+        if (idx + s < n && idx % (s << 1) == 0)
         {
             d_in[idx] = op(d_in[idx], d_in[idx + s]);
         }
