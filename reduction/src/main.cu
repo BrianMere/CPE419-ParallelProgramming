@@ -1,4 +1,5 @@
 #include "reduction.h"
+#include "scan.h"
 #include "cuda.h"
 
 #include <string>
@@ -113,7 +114,14 @@ int main(int argc, char **argv)
 
     // Output results and free data.
     std::cout << "Result of reduction: " << std::to_string(*res) << std::endl;
+    cudaMemset(gpu_res, 0, sizeof(T));
+    CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
+    // Do the reduction 
+    segmentScan(gpu_arr, gpu_res, n, CEIL_DIV(n, THDS_PER_BLK), THDS_PER_BLK);
 
+    // Get data from the GPU (only want to get the res data)
+    CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
+    std::cout << "Result of Scan: " << std::to_string(*res) << std::endl;
 
     cudaFree(gpu_arr);
     cudaFree(gpu_res);
