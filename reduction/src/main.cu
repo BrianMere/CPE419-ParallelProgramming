@@ -121,7 +121,19 @@ int main(int argc, char **argv)
 
     // Get data from the GPU (only want to get the res data)
     CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
+    CUDA_ERR_CHK(cudaMemcpy(arr, gpu_arr, sizeof(T) * n, cudaMemcpyDeviceToHost));
     std::cout << "Result of Scan: " << std::to_string(*res) << std::endl;
+    for (int i = 0; i < 5; i++)
+    {
+        printf("%d, ", arr[i]);
+    }
+    printf("... ");
+    for (int i = n-5; i < n; i++)
+    {
+        printf("%d, ", arr[i]);
+    }
+    printf("\n");
+
 
     cudaFree(gpu_arr);
     cudaFree(gpu_res);
