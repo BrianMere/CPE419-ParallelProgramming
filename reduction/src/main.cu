@@ -3,7 +3,8 @@
 
 #include <string>
 
-#define DEF_ARR_SIZE 0x1000
+#define DEF_ARR_SIZE 0x200000
+#define THDS_PER_BLK 1024
 
 template <typename T>
 /**
@@ -12,7 +13,8 @@ template <typename T>
 void randomizeArr(T* arr, int n)
 {
     for(int i = 0; i < n; i++)
-        arr[i] = i;
+        // arr[i] = i;
+        arr[i] = 1;
 }
 
 /**
@@ -46,11 +48,12 @@ int main(int argc, char **argv)
         CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
 
         // Do the reduction 
-        reduceAdjacent<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+        reduceAdjacent(gpu_arr, gpu_res, n, CEIL_DIV(n, THDS_PER_BLK), THDS_PER_BLK);
 
         // Get data from the GPU (only want to get the res data)
         CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
 
+    randomizeArr(arr, n);
     cudaEvent_t start, stop;                              
     float elapsed=0;                                       
     cudaEventCreate(&start);                              
@@ -61,7 +64,7 @@ int main(int argc, char **argv)
     CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
 
     // Do the reduction 
-    reduceAdjacent<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+    reduceAdjacent(gpu_arr, gpu_res, n, CEIL_DIV(n, THDS_PER_BLK), THDS_PER_BLK);
 
     // Get data from the GPU (only want to get the res data)
     CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
@@ -83,11 +86,12 @@ int main(int argc, char **argv)
         CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
 
         // Do the reduction 
-        reduceSpread<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+        reduceSpread(gpu_arr, gpu_res, n, CEIL_DIV(n, THDS_PER_BLK), THDS_PER_BLK);
 
         // Get data from the GPU (only want to get the res data)
         CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
 
+    randomizeArr(arr, n);
     elapsed=0;                                       
     cudaEventCreate(&start);                              
     cudaEventCreate(&stop);                              
@@ -97,7 +101,7 @@ int main(int argc, char **argv)
     CUDA_ERR_CHK(cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice));
 
     // Do the reduction 
-    reduceSpread<<<CEIL_DIV(n, 256), 256>>>(gpu_arr, gpu_res, n);
+    reduceSpread(gpu_arr, gpu_res, n, CEIL_DIV(n, THDS_PER_BLK), THDS_PER_BLK);
 
     // Get data from the GPU (only want to get the res data)
     CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
