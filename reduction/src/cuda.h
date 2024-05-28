@@ -50,4 +50,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 
+#define TIME(f, msg)                            \
+cudaEventCreate(&start);                        \
+cudaEventCreate(&stop);                         \
+cudaEventRecord(start, 0);                      \
+f;                                              \
+cudaEventRecord(stop, 0);                       \
+cudaEventSynchronize (stop);                    \
+cudaEventElapsedTime(&elapsed, start, stop);    \
+printf(msg": %f ms\n", elapsed);  
+
 #endif 

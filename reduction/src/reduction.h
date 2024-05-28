@@ -158,7 +158,7 @@ template<typename T>
 void reduce_omp(T* d_in, T* d_res, unsigned int n)
 {
     T sum = 0;
-    #pragma omp parallel for reduction(+:sum)
+    // #pragma omp parallel for reduction(+:sum)
     for (uint64_t i = 0; i < n; i++)
     {
         sum += d_in[i];

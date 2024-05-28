@@ -28,6 +28,15 @@ int main(int argc, char **argv)
     T* arr, *gpu_arr, *res, *gpu_res, *test_res;
     int n = DEF_ARR_SIZE;
 
+    cudaDeviceProp prop;   
+    cudaGetDeviceProperties( &prop, 0);
+    printf("Device: %s\n%d threads per block\n%d per MP\n", prop.name, prop.maxThreadsPerBlock, prop.maxThreadsPerMultiProcessor);
+    printf("%d total multiprocessors\n", prop.multiProcessorCount);
+    int block_count = prop.multiProcessorCount * prop.maxThreadsPerMultiProcessor / prop.maxThreadsPerBlock;
+    printf("Using %d blocks\n", block_count);
+    // printf("l1 Cache size: %ld\n", prop.sharedMemPerBlock);
+    printf("\n");
+
     if (argc > 1) n = atoi(argv[1]);
     arr = (T*) malloc(sizeof(T) * n);
     res = (T*) malloc(sizeof(T));
@@ -38,7 +47,17 @@ int main(int argc, char **argv)
     randomizeArr(arr, n);
 
     // Run expected result
+    cudaEvent_t start, stop;                              
+    float elapsed=0;                                       
+    cudaEventCreate(&start);                              
+    cudaEventCreate(&stop);                              
+    cudaEventRecord(start, 0);   
     reduce_omp(arr, test_res, n);
+    cudaEventRecord(stop, 0);                      
+    cudaEventSynchronize(stop);                    
+    cudaEventElapsedTime(&elapsed, start, stop);   
+    std::cout << "OMP Implementation: " << std::to_string(elapsed) << " ms" << std::endl; 
+
     std::cout << "Expected value of: " << std::to_string(*test_res) << std::endl;
 
     // Actually run the main timable block
@@ -54,9 +73,8 @@ int main(int argc, char **argv)
         // Get data from the GPU (only want to get the res data)
         CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
 
-    randomizeArr(arr, n);
-    cudaEvent_t start, stop;                              
-    float elapsed=0;                                       
+    randomizeArr(arr, n);                            
+    elapsed=0;                                       
     cudaEventCreate(&start);                              
     cudaEventCreate(&stop);                              
     cudaEventRecord(start, 0);                         
@@ -112,6 +130,11 @@ int main(int argc, char **argv)
     cudaEventElapsedTime(&elapsed, start, stop);   
     std::cout << msg << ": " << std::to_string(elapsed) << " ms" << std::endl; 
 
+    randomizeArr(arr, n);                            
+    elapsed=0;                                       
+    cudaEventCreate(&start);                              
+    cudaEventCreate(&stop);                              
+    cudaEventRecord(start, 0);  
     // Output results and free data.
     std::cout << "Result of reduction: " << std::to_string(*res) << std::endl;
     cudaMemset(gpu_res, 0, sizeof(T));
@@ -122,6 +145,10 @@ int main(int argc, char **argv)
     // Get data from the GPU (only want to get the res data)
     CUDA_ERR_CHK(cudaMemcpy(res, gpu_res, sizeof(T), cudaMemcpyDeviceToHost)); 
     CUDA_ERR_CHK(cudaMemcpy(arr, gpu_arr, sizeof(T) * n, cudaMemcpyDeviceToHost));
+    cudaEventRecord(stop, 0);                      
+    cudaEventSynchronize(stop);                    
+    cudaEventElapsedTime(&elapsed, start, stop);  
+
     std::cout << "Result of Scan: " << std::to_string(*res) << std::endl;
     for (int i = 0; i < 5; i++)
     {
@@ -133,6 +160,8 @@ int main(int argc, char **argv)
         printf("%d, ", arr[i]);
     }
     printf("\n");
+
+    std::cout << "Scan Time: " << std::to_string(elapsed) << " ms" << std::endl;
 
 
     cudaFree(gpu_arr);
