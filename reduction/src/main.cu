@@ -3,6 +3,7 @@
 #include "cuda.h"
 
 #include <string>
+#include <omp.h>
 
 #define DEF_ARR_SIZE 0x200000
 #define THDS_PER_BLK 1024
@@ -49,14 +50,10 @@ int main(int argc, char **argv)
     // Run expected result
     cudaEvent_t start, stop;                              
     float elapsed=0;                                       
-    cudaEventCreate(&start);                              
-    cudaEventCreate(&stop);                              
-    cudaEventRecord(start, 0);   
+    double begin = omp_get_wtime();
     reduce_omp(arr, test_res, n);
-    cudaEventRecord(stop, 0);                      
-    cudaEventSynchronize(stop);                    
-    cudaEventElapsedTime(&elapsed, start, stop);   
-    std::cout << "OMP Implementation: " << std::to_string(elapsed) << " ms" << std::endl; 
+    double end = omp_get_wtime();
+    std::cout << "OMP Implementation: " << std::to_string((end - begin) * 1000) << " ms" << std::endl; 
 
     std::cout << "Expected value of: " << std::to_string(*test_res) << std::endl;
 
