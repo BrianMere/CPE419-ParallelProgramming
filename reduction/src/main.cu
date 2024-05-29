@@ -16,7 +16,7 @@ void randomizeArr(T* arr, int n)
 {
     for(int i = 0; i < n; i++)
         // arr[i] = i;
-        arr[i] = 1;
+        arr[i] = sqrtf(i + 0.5f);
 }
 
 /**
@@ -25,7 +25,7 @@ void randomizeArr(T* arr, int n)
 */
 int main(int argc, char **argv)
 {
-    typedef int T; // define our type we want to use here.
+    typedef float T; // define our type we want to use here.
     T* arr, *gpu_arr, *res, *gpu_res, *test_res;
     int n = DEF_ARR_SIZE;
 
