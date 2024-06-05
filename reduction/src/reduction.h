@@ -76,6 +76,7 @@ void reduceAdjacent(T* d_in, T* d_res, unsigned int n, int blocks, int threads_p
     reduceAdjacent1<<<blocks, threads_per>>>(d_in, d_res, n);
     for(unsigned int s = threads_per; s < n; s <<= 1)
     {
+
         reduceAdjacent2<<<blocks, threads_per>>>(d_in, d_res, n, s);
     }
 }
@@ -158,7 +159,7 @@ template<typename T>
 void reduce_omp(T* d_in, T* d_res, unsigned int n)
 {
     T sum = 0;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     for (uint64_t i = 0; i < n; i++)
     {
         sum += d_in[i];
