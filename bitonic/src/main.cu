@@ -1,5 +1,5 @@
-#include "reduction.h"
-#include "scan.h"
+// #include "reduction.h"
+// #include "scan.h"
 #include "cuda.h"
 
 #include <string>
@@ -38,15 +38,17 @@ __global__ void bitonic_sort(T* arr, int n, int j, int k)
     }
 }
 
-
 template <typename T>
 void bitonic_sort_wrap(T * arr, int n)
 {
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
     for (int k = 2; k <= n; k *= 2) {
         for (int j = k/2; j > 0; j /= 2){
-            bitonic_sort<<<CEIL_DIV(n, 1024), 1024>>>(arr, n, j, k);
+            bitonic_sort<<<CEIL_DIV(n, 1024), 1024, 0, stream>>>(arr, n, j, k);
         }
     }
+    cudaStreamSynchronize(stream);
 }
 
 int compare( const void* a, const void* b)
@@ -70,7 +72,7 @@ int main(int argc, char **argv)
     T* arr, *gpu_arr, *res, *gpu_res, *test_res;
     int n = DEF_ARR_SIZE;
 
-    if (argc > 1) n = atoi(argv[1]);
+    if (argc > 1) n = 2 << atoi(argv[1]);
     arr = (T*) malloc(sizeof(T) * n);
     // res = (T*) malloc(sizeof(T));
     // test_res = (T*) malloc(sizeof(T));
