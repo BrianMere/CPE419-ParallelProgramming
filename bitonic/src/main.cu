@@ -20,8 +20,6 @@ void randomizeArr(T * arr, int n)
         arr[i] = -i;
 }
 
-
-
 template <typename T>
 __global__ void bitonic_sort(T* arr, int n, int j, int k)
 {
@@ -46,6 +44,39 @@ void bitonic_sort_wrap(T * arr, int n)
     for (int k = 2; k <= n; k *= 2) {
         for (int j = k/2; j > 0; j /= 2){
             bitonic_sort<<<CEIL_DIV(n, 1024), 1024, 0, stream>>>(arr, n, j, k);
+        }
+    }
+    cudaStreamSynchronize(stream);
+}
+
+template <typename T>
+__global__ void bitonic_sort_chunk(T* arr, int n, int j, int k, int chunks)
+{
+    int start = (threadIdx.x + blockIdx.x * blockDim.x )* chunks;
+    for (int i = start; (i < (start+chunks)) && (i<n); i++)
+    {
+        int l = (i^j); 
+        if (l > i){
+                if (  ((i & k) == 0) && (arr[i] > arr[l])
+                || ((i & k) != 0) && (arr[i] < arr[l]) )
+                {
+                        T temp = arr[i];
+                        arr[i] = arr[l];
+                        arr[l] = temp;
+                }
+        }
+    }
+}
+
+template <typename T>
+void bitonic_sort_wrap_chunk(T * arr, int n)
+{
+    int chunks = 2;
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    for (int k = 2; k <= n; k *= 2) {
+        for (int j = k/2; j > 0; j /= 2){
+            bitonic_sort_chunk<<<CEIL_DIV(n, (1024*chunks)), 1024, 0, stream>>>(arr, n, j, k, chunks);
         }
     }
     cudaStreamSynchronize(stream);
@@ -119,7 +150,9 @@ int main(int argc, char **argv)
     // Pass data to the GPU 
     cudaMemcpy(gpu_arr, arr, sizeof(T) * n, cudaMemcpyHostToDevice);
     // Do the sort 
+    // bitonic_sort_wrap_chunk(gpu_arr, n);
     bitonic_sort_wrap(gpu_arr, n);
+
     // Get data from the GPU 
     cudaMemcpy(arr, gpu_arr, sizeof(T)*n, cudaMemcpyDeviceToHost); 
 
