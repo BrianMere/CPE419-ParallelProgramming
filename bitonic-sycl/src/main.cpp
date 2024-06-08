@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 {
     long unsigned int N;
     N = DEF_ARR_SIZE;
-    if(argc > 1) N = atoi(argv[1]);
+    if(argc > 1) N = 1 << atoi(argv[1]);
 
     std::cout << "Number Elems: " << N << std::endl;
     

@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     T* arr, *gpu_arr, *res, *gpu_res, *test_res;
     int n = DEF_ARR_SIZE;
 
-    if (argc > 1) n = 2 << atoi(argv[1]);
+    if (argc > 1) n = 1 << atoi(argv[1]);
     arr = (T*) malloc(sizeof(T) * n);
     // res = (T*) malloc(sizeof(T));
     // test_res = (T*) malloc(sizeof(T));
