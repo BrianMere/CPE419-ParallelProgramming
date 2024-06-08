@@ -3,7 +3,7 @@ CC 		?= gcc
 CFLAGS 	= -lpthread -fpic 
 
 OBJECTS = $(addprefix build/, $(addsuffix .o, $(basename $(notdir $(wildcard src/*.c*)))))
-HEADERS = $(wildcard src/*.h)
+HEADERS = $(wildcard src/*.h*)
 
 all: build $(LAB)
 
