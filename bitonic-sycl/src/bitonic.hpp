@@ -12,8 +12,7 @@ template <typename T>
 void randomizeArr(T * arr, int n)
 {
     for(int i = 0; i < n; i++)
-       //arr[i] = 2 * static_cast<T> (rand()) / static_cast<T> (RAND_MAX) - 1;
-       arr[i] = -i;
+        arr[i] =  2.0f * (static_cast<T> (rand()) / static_cast<T> (RAND_MAX)) - 1.0f;
 }
 
 /**

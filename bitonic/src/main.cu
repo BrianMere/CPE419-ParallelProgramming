@@ -7,7 +7,7 @@
 #define DEF_ARR_SIZE 0x10000000
 #define THDS_PER_BLK 1024
 
-typedef int T; // define our type we want to use here.
+typedef float T; // define our type we want to use here.
 
 template <typename T>
 /**
@@ -16,8 +16,7 @@ template <typename T>
 void randomizeArr(T * arr, int n)
 {
     for(int i = 0; i < n; i++)
-        // arr[i] = i;
-        arr[i] = -i;
+        arr[i] =  2.0f * (static_cast<T> (rand()) / static_cast<T> (RAND_MAX)) - 1.0f;
 }
 
 template <typename T>
@@ -131,12 +130,12 @@ int main(int argc, char **argv)
     printf("Input Array: \n");
     for (int i = 0; i < 5; i++)
     {
-        printf("%d, ", arr[i]);
+        printf("%f, ", arr[i]);
     }
     printf("...");
     for (int i = n-5; i < n; i++)
     {
-        printf("%d, ", arr[i]);
+        printf("%f, ", arr[i]);
     }
     printf("\n");
 
@@ -164,12 +163,12 @@ int main(int argc, char **argv)
     printf("Output Array: \n");
     for (int i = 0; i < 5; i++)
     {
-        printf("%d, ", arr[i]);
+        printf("%f, ", arr[i]);
     }
     printf("...");
     for (int i = n-5; i < n; i++)
     {
-        printf("%d, ", arr[i]);
+        printf("%f, ", arr[i]);
     }
     printf("\n");
 

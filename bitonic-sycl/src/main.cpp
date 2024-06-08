@@ -24,6 +24,8 @@ int main(int argc, char** argv)
 
     // initialize some data array
     auto data = sycl::malloc_shared<T>(N,q);
+
+    std::cout << "Naive Solution" << std::endl;
     randomizeArr(data, N);
 
     // Print input array
@@ -51,5 +53,32 @@ int main(int argc, char** argv)
 
     std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1000000.0f << std::endl;
     
+    std::cout << "Kernel Solution" << std::endl;
+    randomizeArr(data, N);
+
+    // Print input array
+    std::cout << "Input Array:" << std::endl;
+    for(int i = 0; i < 5; i++)
+        std::cout << data[i] << ", ";
+    std::cout << "..., ";
+    for(int i = N-5; i < N; i++)
+        std::cout << data[i] << ", ";
+    std::cout << std::endl;
+
+    // computation on GPU
+    t1 = std::chrono::steady_clock::now();
+    bitonic_sort(data, N, q);
+    t2 = std::chrono::steady_clock::now();
+
+    // Print output array
+    std::cout << "Output Array:" << std::endl;
+    for(int i = 0; i < 5; i++)
+        std::cout << data[i] << ", ";
+    std::cout << "..., ";
+    for(int i = N-5; i < N; i++)
+        std::cout << data[i] << ", ";
+    std::cout << std::endl;
+
+    std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1000000.0f << std::endl;
     return 0;
 }
